@@ -90,9 +90,6 @@
 
 <script>
 
-import axios from 'axios'
-
-
 export default {
   name: 'App',
   data () {
@@ -113,17 +110,17 @@ export default {
     const profile = localStorage.getItem("profile")
     if(token){
         const profileObj = JSON.parse(profile)
-        axios({
+        fetch(`${this.base_url}/users/${profileObj._id}`, {
         method: 'GET',
-        url: `${this.base_url}/users/${profileObj._id}`,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
       })
+      .then(r => r.json())
       .then(data=> {
-        this.user = data.data
+        this.user = data
       })
     }
   },
@@ -132,9 +129,10 @@ export default {
       const queryJoined = this.query.split(' ').join('+')
       if (e.key == "Enter"){
         this.page = 1
-        axios(`${this.base_url}/books/search?term=${queryJoined}&page=${this.page}`)
+        fetch(`${this.base_url}/books/search?term=${queryJoined}&page=${this.page}`)
+        .then(r => r.json())
         .then(data => {
-          this.setBooks(data.data)})
+          this.setBooks(data)})
         .catch(err => {
           console.log(err)
           this.page = 0
@@ -148,8 +146,9 @@ export default {
       }else{
         this.page = this.page - 1
       }
-        axios(`${this.base_url}/books/search?term=${this.query}&page=${this.page}`)
-        .then(data => this.setBooks(data.data))
+        fetch(`${this.base_url}/books/search?term=${this.query}&page=${this.page}`)
+        .then(r => r.json())
+        .then(data => this.setBooks(data))
         .catch(err => {
           console.log(err)
           this.page = 0
@@ -164,18 +163,23 @@ export default {
       event.preventDefault()
       const options = {
         method: 'post',
-        url: `${this.base_url}/users/${type}`,
-        data: {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
           username: this.username,
           password: this.password
-        }
+        })
       }
-      axios(options)
+      fetch(`${this.base_url}/users/${type}`, options)
+      .then(r => r.json())
       .then(data => {
-        this.user = data.data.result, 
+        console.log(data)
+        this.user = data.result, 
         this.home = true
-        localStorage.setItem("token", data.data.token)
-        localStorage.setItem("profile", JSON.stringify({...data.data.result}))
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("profile", JSON.stringify({...data.result}))
       })
     },
     logoutUser (){
@@ -185,19 +189,29 @@ export default {
     },
     async addBook (title, author, image) {
       console.log(title, author, image)
-      const user = await axios.post(`${this.base_url}/users/${this.user._id}/books`, {
-        title: title,
-        author: author,
-        image: image
-      })
-      console.log(user)
-      this.user = user.data
+      const options = {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          title: title,
+          author: author,
+          image: image
+        })
+      }
+      fetch(`${this.base_url}/users/${this.user._id}/books`, options)
+      .then(r => r.json())
+      .then(data => this.user = data)
     },
     async deleteBook (bookId) {
-      const user = await axios.delete(`${this.base_url}/users/${this.user._id}/books/${bookId}`)
-      console.log(user.data)
-      this.user = user.data
-      console.log(this.user)
+      const options = {
+        method: 'DELETE'
+      }
+      fetch(`${this.base_url}/users/${this.user._id}/books/${bookId}`, options)
+      .then(r => r.json())
+      .then(data => this.user = data)
     }
   }
 
