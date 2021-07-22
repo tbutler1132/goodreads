@@ -2,8 +2,11 @@
   <div class="app">
     <div v-if="this.home" class="not-login">   
       <nav>
-        <button v-on:click="this.page = 0">home</button>
-        <button v-on:click="this.home = false">Login</button>
+        <p v-if="this.user">{{this.user.username}}</p>
+        <p v-else>Welcome</p>
+        <i class="fa fa-home" v-on:click="this.page = 0"></i>
+        <p v-if="!this.user" v-on:click="this.home = false">Login</p>
+        <p v-else v-on:click="logoutUser">Logout</p>
       </nav>
       <main>
         <div class="search-box" >
@@ -18,7 +21,6 @@
         <div v-if="this.books && this.books.length > 0">
           <ul>
             <li v-for="book in books" :key="book.id">
-              <p v-on:click="addBook(book.title, book.author, book.image)">+</p>
               <div class="book-result">
                   <div class="book-cover">
                     <img v-bind:src="book.image" />
@@ -27,13 +29,14 @@
                   <span class="book-title">{{ book.title }}</span>
                     <span> by {{book.author}}</span>
                 </div>
+              <p v-on:click="addBook(book.title, book.author, book.image)">+</p>
               </div>
             </li>
           </ul>
           <span v-if="this.page >= 1">Page: {{page}}</span>
           <div v-if="this.books" class="page-buttons">
-            <button v-on:click="fetchNextPage" v-if="this.page >= 2" value="prev">Prev</button>
-            <button v-on:click="fetchNextPage" v-if="this.page >= 1" value="next">Next</button>
+            <button class="page" v-on:click="fetchNextPage" v-if="this.page >= 2" value="prev">Prev</button>
+            <button class="page" v-on:click="fetchNextPage" v-if="this.page >= 1" value="next">Next</button>
           </div>
         </div>
         <div v-else-if="this.books && this.books.length === 0">
@@ -45,31 +48,41 @@
         <div v-else>
           <span v-if="!this.user">Search for a book!</span>
           <div v-else class="user-books">
-          <ul>
-            <li v-for="book in this.user.books" :key="book._id">
-              <p v-on:click="deleteBook(book._id)">-</p>
-              <div class="book-result">
-                <div class="book-cover">
-                  <img v-bind:src="book.image" />
+            <ul v-if="this.user.books.length > 0">
+              <li v-for="book in this.user.books" :key="book._id">
+                <div class="book-result">
+                  <div class="book-cover">
+                    <img v-bind:src="book.image" />
+                  </div>
+                  <div class="book-info">
+                    <span class="book-title">{{ book.title }}</span>
+                    <span> by {{book.author}}</span>
+                  </div>
+                <p v-on:click="deleteBook(book._id)">-</p>
                 </div>
-                <div class="book-info">
-                  <span class="book-title">{{ book.title }}</span>
-                  <span> by {{book.author}}</span>
-                </div>
-              </div>
-            </li>
-          </ul>
+              </li>
+            </ul>
+            <span v-else>Search books to add to your reading list!</span>
           </div>
         </div>
       </main>
     </div>
-    <div v-else class="login">
-      <form v-on:submit="signinUser">
+    <div v-else class="user-form">
+      <form v-if="!this.newUser" v-on:submit="(e) => signinUser(e, 'signin')">
         <label>Username</label>
         <input v-model="this.username" type="text" />
         <label>Password</label>
         <input v-model="this.password" type="password" />
         <button type="submit">Signin</button>
+        <p v-on:click="this.newUser = true">Not a user? Signup!</p>
+      </form>
+      <form v-else v-on:submit="(e) => signinUser(e, 'signup')">
+        <label>Username</label>
+        <input v-model="this.username" type="text" />
+        <label>Password</label>
+        <input v-model="this.password" type="password" />
+        <button id="sign-in" class="page" type="submit">Signup</button>
+        <p v-on:click="this.newUser = false">Already a user? Sign in!</p>
       </form>
     </div>
   </div>
@@ -92,6 +105,7 @@ export default {
       username: '',
       password: '',
       user: false,
+      newUser: true,
     }
   },
   async created () {
@@ -120,7 +134,6 @@ export default {
         this.page = 1
         axios(`${this.base_url}/books/search?term=${queryJoined}&page=${this.page}`)
         .then(data => {
-          console.log(data.data)
           this.setBooks(data.data)})
         .catch(err => {
           console.log(err)
@@ -146,13 +159,12 @@ export default {
     },
     setBooks(books) {
       this.books = books
-      console.log(this.books)
     },
-    signinUser (e) {
-      e.preventDefault()
+    signinUser(event, type){
+      event.preventDefault()
       const options = {
         method: 'post',
-        url: `${this.base_url}/users/signin`,
+        url: `${this.base_url}/users/${type}`,
         data: {
           username: this.username,
           password: this.password
@@ -162,11 +174,14 @@ export default {
       .then(data => {
         this.user = data.data.result, 
         this.home = true
-        console.log(data)
-        console.log(this.user)
         localStorage.setItem("token", data.data.token)
         localStorage.setItem("profile", JSON.stringify({...data.data.result}))
       })
+    },
+    logoutUser (){
+      localStorage.removeItem("token")
+      localStorage.removeItem("profile")
+      this.user = false
     },
     async addBook (title, author, image) {
       console.log(title, author, image)
@@ -175,11 +190,14 @@ export default {
         author: author,
         image: image
       })
-      this.user = user
+      console.log(user)
+      this.user = user.data
     },
     async deleteBook (bookId) {
       const user = await axios.delete(`${this.base_url}/users/${this.user._id}/books/${bookId}`)
-      this.user = user
+      console.log(user.data)
+      this.user = user.data
+      console.log(this.user)
     }
   }
 
@@ -212,6 +230,7 @@ scroll-behavior: smooth;
   margin-bottom: 30px;
   display: flex;
   justify-content: center;
+  margin-top: 4%;
 }
 .search-box .search-bar {
   display: flex;
@@ -271,7 +290,7 @@ ul {
   justify-content: center
 }
 
-button {
+button.page {
 	color: #fff !important;
 	text-transform: uppercase;
 	text-decoration: none;
@@ -284,8 +303,69 @@ button {
   cursor: pointer;
 }
 
+#sign-in{
+  width: 50%;
+  border: solid;
+  margin-left: 25%;
+  margin-right: 25%;
+}
+
+.my-button {
+    color: #333;
+    background-color: #fff;
+    border-color: #ccc;
+}
+.my-button:focus {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #8c8c8c;
+}
+.my-button:hover {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #adadad;
+}
+.my-button:active {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #adadad;
+}
+
 nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: auto;
   width: 25%;
-  float: right
+  float: center;
+  transition: all .2s ease-in-out; 
+}
+
+
+nav > p {
+  cursor: pointer;
+  transition: all .2s ease-in-out; 
+}
+
+nav > p:hover{
+  transform: scale(1.5); 
+}
+
+i {
+  cursor: pointer;
+  transition: all .2s ease-in-out; 
+}
+
+i:hover{
+  transform: scale(1.8); 
+}
+
+form{
+  display: flex;
+  flex-direction: column;
+  width: 20%;
+  margin: auto;
+  justify-content: space-around;
+  height: 300px;
 }
 </style>
