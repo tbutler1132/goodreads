@@ -11,35 +11,37 @@
         />
       </div>
       <div v-if="this.books && this.books.length > 0">
-        <iFrame width="750px" height="750px" v-if="this.iFrame" v-bind:src="this.iFrame"></iFrame>
+        <div class="iFrame" v-if="this.iFrame">
+          <iFrame width="100%" height="750px"  v-bind:src="this.iFrame"></iFrame>
+          <button v-on:click="this.iFrame = false">Return to Results</button>
+        </div>
         <ul v-if="!this.iFrame">
-          <li  v-for="book in books" :key="book.id" v-on:click="fetchReviews(book.id)">
-            <div class="book-result">
+          <li  v-for="book in books" :key="book.id">
+            <div class="book-result" v-on:click="fetchReviews(book.id)">
                 <div class="book-cover">
                   <img v-bind:src="book.image" />
                 </div>
               <div class="book-info">
                 <span class="book-title">{{ book.title }}</span>
                 <span> by {{book.author}}</span>
-                <span> {{book.rating}}</span>
               </div>
             </div>
           </li>
         </ul>
-        <span v-if="this.page >= 1">Page: {{page}}</span>
-        <div v-if="this.books" class="page-buttons">
+        <small v-if="this.page >= 1 && !this.iFrame">Page: {{page}}</small>
+        <div v-if="this.books && !this.iFrame" class="page-buttons">
           <button v-on:click="fetchPage" v-if="this.page >= 2" value="prev">Prev</button>
           <button v-on:click="fetchPage" v-if="this.page >= 1" value="next">Next</button>
         </div>
       </div>
         <div v-else-if="this.books && this.books.length === 0">
-          <span>No Results...</span>
+          <strong>No Results...</strong>
         </div>
         <div v-else-if="this.page > 0 && !this.books">
-          <span>Loading...</span>
+          <small>Loading...</small>
         </div>
         <div v-else>
-          <span>Search for a book!</span>
+          <strong>Search books to read reviews!</strong>
         </div>
     </main>
   </div>
@@ -60,9 +62,9 @@ export default {
   },
   methods: {
     fetchBooks (e) {
-      this.iFrame = false
       const queryJoined = this.query.split(' ').join('+')
       if (e.key == "Enter"){
+      this.iFrame = false
         this.page = 1
         fetch(`${this.base_url}/books/search?term=${queryJoined}&page=${this.page}`)
         .then(r => r.json())
@@ -164,9 +166,15 @@ body {
   padding-bottom: 1%;
   padding-top: 1%;
   background-color: #4cc9f0;
-
+  cursor: pointer;
   border-radius: 16px 0px 16px 0px;
+  transition: all .2s ease-in-out; 
 }
+
+.book-result:hover{
+  transform: scale(1.1); 
+}
+
 
 ul {
     list-style-type: none;
@@ -184,7 +192,11 @@ ul {
 
 .page-buttons{
   display: flex;
-  justify-content: center
+  justify-content: center;
+  margin-top: 1%;
+  margin-left: auto;
+  margin-right: auto;
+  width: 10%;
 }
   
 
@@ -192,7 +204,8 @@ button {
 	color: #fff !important;
 	text-transform: uppercase;
 	text-decoration: none;
-	background: #ed3330;
+	background: #C700A0;
+  border-color: #C700A0;
 	padding: 20px;
 	border-radius: 5px;
 	display: inline-block;
@@ -200,4 +213,16 @@ button {
 	transition: all 0.4s ease 0s;
   cursor: pointer;
 }
+
+.iFrame {
+  display: flex;
+  width: 50%;
+  margin: auto;
+  flex-direction: column;
+}
+
+strong {
+  font-size: 20px;
+}
+
 </style>
