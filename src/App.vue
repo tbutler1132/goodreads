@@ -22,7 +22,7 @@
                   <img v-bind:src="book.image" />
                 </div>
               <div class="book-info">
-                <span class="book-title">{{ book.title }}</span>
+                <cite class="book-title">{{ book.title }}</cite>
                 <span> by {{book.author}}</span>
               </div>
             </div>
@@ -37,11 +37,11 @@
         <div v-else-if="this.books && this.books.length === 0">
           <strong>No Results...</strong>
         </div>
-        <div v-else-if="this.page > 0 && !this.books">
+        <div v-else-if="!this.books && this.page > 0 ">
           <small>Loading...</small>
         </div>
         <div v-else>
-          <strong>Search books to read reviews!</strong>
+          <strong>Search for a book to read reviews!</strong>
         </div>
     </main>
   </div>
@@ -61,10 +61,11 @@ export default {
     }
   },
   methods: {
+    //Fetch books upon initial search
     fetchBooks (e) {
       const queryJoined = this.query.split(' ').join('+')
       if (e.key == "Enter"){
-      this.iFrame = false
+        this.iFrame = false
         this.page = 1
         fetch(`${this.base_url}/books/search?term=${queryJoined}&page=${this.page}`)
         .then(r => r.json())
@@ -76,6 +77,7 @@ export default {
           alert("Something went wrong")})
       }
     },
+    //Fetch a different page of books
     fetchPage (e) {
       this.books = false
       if(e.target.value === "next"){
@@ -91,12 +93,12 @@ export default {
           this.page = 0
           this.books = false
           alert("Something went wrong")})
-          document.documentElement.scrollTop = 0
+        document.documentElement.scrollTop = 0
     },
     setBooks(books) {
       this.books = books
-      console.log(this.books)
     },
+    //Fetch review widgets
     fetchReviews (id) {
       console.log(id)
       fetch(`${this.base_url}/books/reviews/?id=${id}`)
@@ -156,6 +158,10 @@ body {
   border-radius: 16px 0px 16px 0px;
 }
 
+ul {
+  list-style-type: none;
+}
+
 .book-result{
   display: flex;
   justify-content: space-around;
@@ -175,11 +181,6 @@ body {
   transform: scale(1.1); 
 }
 
-
-ul {
-    list-style-type: none;
-}
-
 .book-info {
   display: flex;
   flex-direction: column;
@@ -189,16 +190,6 @@ ul {
 .book-title{
   font-weight: bold;
 }
-
-.page-buttons{
-  display: flex;
-  justify-content: center;
-  margin-top: 1%;
-  margin-left: auto;
-  margin-right: auto;
-  width: 10%;
-}
-  
 
 button {
 	color: #fff !important;
@@ -214,6 +205,15 @@ button {
   cursor: pointer;
 }
 
+.page-buttons{
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1%;
+  margin-left: auto;
+  margin-right: auto;
+  width: 10%;
+}
+  
 .iFrame {
   display: flex;
   width: 50%;
